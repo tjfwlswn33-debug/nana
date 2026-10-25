@@ -3,17 +3,20 @@ if (!defined('_GNUBOARD_')) exit; // 개별 페이지 접근 불가
 
 // add_stylesheet('css 구문', 출력순서); 숫자가 작을 수록 먼저 출력됨
 require_once __DIR__ . '/skin.lib.php';
+$nana_settings = nana_load_settings(__DIR__);
 // Gnuboard5 basic write skin을 바탕으로 작성 (GPL-2.0-or-later).
 $editor_js = isset($editor_js) ? $editor_js : '';
 $captcha_js = isset($captcha_js) ? $captcha_js : '';
 $is_use_captcha = isset($is_use_captcha) ? $is_use_captcha : !empty($is_guest);
 ?>
 
-<section id="bo_w" class="nana-skin nana-write"><header class="nana-heading"><p class="nana-eyebrow">WRITE A LITTLE STORY</p><h2>기록 남기기</h2><p>제목과 이야기를 적고, 이미지를 첨부해 주세요.</p></header>
+<div class="nana-shell <?= !empty($nana_settings['show_sidebar']) ? 'nana-has-sidebar' : '' ?>">
+<?php if (!empty($nana_settings['show_sidebar'])) { include __DIR__ . '/sidebar.php'; } ?>
+<div id="bo_w" class="nana-skin nana-write"><div class="nana-heading"><p class="nana-eyebrow">WRITE A LITTLE STORY</p><h2>기록 남기기</h2><p>제목과 이야기를 적고, 이미지를 첨부해 주세요.</p></div>
     <h2 class="sound_only"><?php echo $g5['title'] ?></h2>
 
     <!-- 게시물 작성/수정 시작 { -->
-    <form name="fwrite" id="fwrite" action="<?php echo $action_url ?>" onsubmit="return fwrite_submit(this);" method="post" enctype="multipart/form-data" autocomplete="off" style="width:<?php echo $width; ?>">
+    <form name="fwrite" id="fwrite" action="<?php echo nana_e(nana_url($action_url)); ?>" onsubmit="return fwrite_submit(this);" target="_self" method="post" enctype="multipart/form-data" autocomplete="off" style="width:<?php echo $width; ?>">
     <?php if (function_exists("get_write_token")): ?><input type="hidden" name="token" value="<?php echo nana_e(get_write_token($bo_table)); ?>"><?php endif; ?>
     <input type="hidden" name="uid" value="<?php echo get_uniqid(); ?>">
     <input type="hidden" name="w" value="<?php echo $w ?>">
@@ -33,6 +36,9 @@ $is_use_captcha = isset($is_use_captcha) ? $is_use_captcha : !empty($is_guest);
         <label for="wr_2">사건 분류</label>
         <input type="text" name="wr_2" id="wr_2" maxlength="255" value="<?php echo nana_e(isset($write['wr_2']) ? $write['wr_2'] : ''); ?>">
     </div>
+
+    <?php foreach (['wr_9', 'wr_10'] as $nana_unused): ?><input type="hidden" name="<?php echo $nana_unused; ?>" value="<?php echo nana_e(nana_field($write, $nana_unused)); ?>"><?php endforeach; ?>
+<?php foreach (['wr_3', 'wr_4', 'wr_5', 'wr_6', 'wr_7', 'wr_8'] as $nana_unused): ?><input type="hidden" name="<?php echo $nana_unused; ?>" value="<?php echo nana_e(nana_field($write, $nana_unused)); ?>"><?php endforeach; ?>
     <?php
     $option = '';
     $option_hidden = '';
@@ -108,14 +114,14 @@ $is_use_captcha = isset($is_use_captcha) ? $is_use_captcha : !empty($is_guest);
         <label for="wr_subject" class="sound_only">제목<strong>필수</strong></label>
 
         <div id="autosave_wrapper" class="write_div">
-            <input type="text" name="wr_subject" value="<?php echo $subject ?>" id="wr_subject" required class="frm_input full_input required" size="50" maxlength="255" placeholder="제목">
+            <input type="text" name="wr_subject" value="<?php echo $subject ?>" id="wr_subject" required class="frm_input full_input required" size="50" maxlength="255" placeholder="사건 제목">
 
         </div>
 
     </div>
 
     <div class="write_div">
-        <label for="wr_content" class="sound_only">내용<strong>필수</strong></label>
+        <label for="wr_content">이야기</label><p class="nana-help">첫 문단은 소개로 표시됩니다. 일반 글에서는 <code>## 외형</code>, <code>## 성격</code>처럼 소제목을 한 줄에 적으면 본문이 나뉩니다. 에디터에서는 제목 2·3 서식을 사용하세요.</p>
         <div class="wr_content <?php echo $is_dhtml_editor ? $config['cf_editor'] : ''; ?>">
             <?php if($write_min || $write_max) { ?>
             <!-- 최소/최대 글자 수 사용 시 -->
@@ -254,5 +260,7 @@ $is_use_captcha = isset($is_use_captcha) ? $is_use_captcha : !empty($is_guest);
         return true;
     }
     </script>
-</section>
+</div>
 <!-- } 게시물 작성/수정 끝 -->
+
+</div>

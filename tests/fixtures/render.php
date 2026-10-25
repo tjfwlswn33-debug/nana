@@ -5,15 +5,16 @@ define('G5_URL', '/site');
 putenv('NANA_TEST_BBS_URL=/site/bbs');
 require dirname(__DIR__) . '/skin-test.php';
 $g5 = ['board_table' => 'g5_board', 'group_table' => 'g5_group', 'write_prefix' => 'g5_write_', 'menu_table' => 'g5_menu'];
-$member = ['mb_level' => 1];
-function sql_fetch($sql, $error = true) { return ['bo_read_level' => 1, 'bo_list_level' => 1, 'bo_use_cert' => '', 'gr_use_access' => 0]; }
+$member = ['mb_level' => 10, 'mb_id' => 'owner'];
+$is_admin = 'super';
+function sql_fetch($sql, $error = true) { return ['bo_read_level' => 1, 'bo_list_level' => 1, 'bo_use_cert' => '', 'gr_use_access' => 0, 'bo_write_level' => 2, 'bo_admin' => 'owner', 'gr_admin' => 'owner']; }
 function sql_query($sql, $error = true) {
     $rows = [];
     if (strpos($sql, 'g5_menu') !== false) {
         $rows = [['me_name' => '세계관', 'me_link' => '/site/bbs/board.php?bo_table=timeline', 'me_level' => 1]];
     } else {
-        foreach (['첫 번째 불빛', '도시가 깨어난 날', '이름 없는 편지', '다시 만난 계절'] as $index => $name) {
-            $rows[] = ['wr_id' => 11 + $index, 'wr_subject' => $name, 'wr_1' => sprintf('%03d', 10 + $index * 8), 'wr_2' => '우리의 기록'];
+        foreach (['첫 번째 불빛', '도시가 깨어난 날', '이름 없는 편지', '다시 만난 계절', '건너편의 사람들', '긴 여행의 끝', '다음 이야기'] as $index => $name) {
+            $rows[] = ['wr_id' => 11 + $index, 'wr_subject' => $name, 'wr_1' => sprintf('%03d', 10 + $index * 8), 'wr_2' => '우리의 기록', 'mb_id' => 'owner'];
         }
     }
     return (object) ['rows' => $rows, 'index' => 0];
@@ -36,7 +37,7 @@ $view = ['wr_subject' => '서이안', 'wr_1' => 'ARCHIVIST · 기록관', 'wr_2'
 function save_fixture($output, $filename, $folder, $kind, $data) {
     $data['skin_path'] = $output . '/skin/board/' . $folder;
     $html = render_skin($folder, $kind, $data);
-    $head = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nana skin fixture</title><link rel="stylesheet" href="/skin/board/' . $folder . '/style.css"><style>body{margin:0;background:#fff;color:#164669;font:13px/2 Arial,"Malgun Gothic",sans-serif}#header{max-width:1100px;margin:20px auto 0;padding:0 24px 15px;border-bottom:1px solid #cdd8df;display:flex;justify-content:space-between;align-items:center}#header a{color:inherit;text-decoration:none}#logo{font:italic 30px Georgia}header{background:transparent}nav{display:flex;gap:24px}.fix-layout{max-width:1140px;padding:0 14px;margin:auto}footer{text-align:center;margin:40px 0;font-size:10px;color:#7691a2}iframe{max-width:100%}</style></head><body><header id="header"><a id="logo" href="/site/main.php">nana.</a><nav id="host-menu"><a href="/site/main.php">Home</a><a href="/site/bbs/board.php?bo_table=oc">Archive</a></nav></header><section id="body"><div class="fix-layout">';
+    $head = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nana skin fixture</title><link rel="stylesheet" href="/skin/board/' . $folder . '/style.css"><style>body{margin:0;background:#e9edf0;color:#164669;font:13px/2 Arial,"Malgun Gothic",sans-serif}#header{max-width:1100px;margin:20px auto 0;padding:0 24px 15px;border-bottom:1px solid #cdd8df;display:flex;justify-content:space-between;align-items:center}#header a{color:inherit;text-decoration:none}#logo{font:italic 30px Georgia}header{background:transparent}nav{display:flex;gap:24px}.fix-layout{max-width:1140px;padding:0 14px;margin:auto}footer{text-align:center;margin:40px 0;font-size:10px;color:#7691a2}iframe{max-width:100%}</style></head><body><header id="header"><a id="logo" href="/site/main.php">nana.</a><nav id="host-menu"><a href="/site/main.php">Home</a><a href="/site/bbs/board.php?bo_table=oc">Archive</a></nav></header><div id="host-bgm" style="position:fixed;left:8px;bottom:8px;z-index:100;background:#fff;border:1px solid #bacbd4;padding:6px 12px;font-size:11px">♪ BGM <button type="button" aria-label="BGM controls">Ⅱ</button></div><section id="body"><div class="fix-layout">';
     file_put_contents($output . '/' . $filename, $head . $html . '</div></section><footer>A little collection of our stories.</footer></body></html>');
 }
 save_fixture($output, 'list.html', 'nana_character', 'list', ['list' => $list, 'total_count' => 3, 'page' => 1]);

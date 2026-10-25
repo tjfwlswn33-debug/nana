@@ -1,4 +1,4 @@
-/* Nana v2: the host page owns its background, typeface and text colour. */
+/* Nana v3: a white reading panel; host menus and music keep their own layout. */
 .nana-skin {
     --n-line: rgba(85, 115, 139, .28);
     --n-soft: rgba(85, 115, 139, .045);
@@ -9,7 +9,7 @@
     margin: 32px auto 50px;
     padding: 0 28px;
     background: transparent;
-    color: inherit;
+    color: #164669;
     font-family: inherit;
     font-size: 13px;
     line-height: 2;
@@ -156,7 +156,7 @@
 @media (prefers-reduced-motion: reduce) { .nana-skin .nana-portrait img { transition: none; } }
 
 /* A local directory keeps navigation available even in a host iframe. */
-.nana-shell { display: block; width: 100%; max-width: 1100px; margin: 0 auto; min-width: 0; }
+.nana-shell { box-sizing: border-box; display: block; width: 100%; max-width: 1100px; margin: 22px auto; padding: 18px 12px; min-width: 0; background: #fff; color: #164669; border: 1px solid rgba(85,115,139,.16); overflow: visible; }
 .nana-shell.nana-has-sidebar { display: grid; grid-template-columns: 135px minmax(0, 1fr); gap: 20px; }
 .nana-shell .nana-sidebar { align-self: start; position: sticky; top: 32px; margin-top: 36px; padding: 0 12px; color: inherit; font-family: inherit; font-size: 11px; line-height: 2; }
 .nana-shell .nana-sidebar-title { display: block; font: italic 22px/1.6 Georgia, serif; }
@@ -176,3 +176,18 @@
 }
 
 .nana-skin .nana-name-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 22px; margin: 5px 0; }
+
+.nana-skin .nana-timeline-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 12px 20px; margin-top: 42px; }
+.nana-skin .nana-timeline-heading .nana-section-label { margin-top: 0; }
+.nana-skin .nana-timeline-tools { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 12px; font-size: 10px; }
+.nana-skin .nana-timeline-tools .nana-text-link { font-size: 10px; }
+.nana-skin .nana-timeline-tools .nana-button { padding: 3px 9px; font-size: 10px; }
+.nana-skin .nana-eras { grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 22px 14px; }
+.nana-skin .nana-era-item { min-width: 0; text-align: center; }
+.nana-skin .nana-era { border-bottom: 0; padding-bottom: 4px; }
+.nana-skin .nana-era-edit, .nana-skin .nana-event-edit { display: inline-block; margin-top: 5px; padding: 1px 8px; border: 1px solid var(--n-line); font-size: 10px; }
+@media (max-width: 700px) {
+    .nana-shell { padding: 10px 0; }
+    .nana-skin .nana-eras { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 400px) { .nana-skin .nana-eras { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

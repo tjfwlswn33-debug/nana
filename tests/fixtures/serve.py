@@ -18,7 +18,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         url = urllib.parse.urlsplit(self.path)
         query = urllib.parse.parse_qs(url.query)
         if url.path == '/site/index.php':
-            body = b'<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><div id="frame-menu">Personal home</div><iframe name="frm_main" title="Personal archive" src="/site/bbs/board.php?bo_table=oc" style="width:100%;height:95vh;border:0"></iframe></body></html>'
+            body = b'<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0"><div id="frame-menu">Personal home</div><div id="frame-bgm" data-state="playing">BGM controls</div><iframe name="frm_main" title="Personal archive" src="/site/bbs/board.php?bo_table=oc" style="width:100%;height:95vh;border:0"></iframe></body></html>'
             self.send_response(200)
             self.send_header('Content-Type', 'text/html; charset=utf-8')
             self.end_headers()

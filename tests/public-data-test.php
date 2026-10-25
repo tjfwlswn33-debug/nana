@@ -4,7 +4,7 @@ require __DIR__ . '/skin-test.php';
 render_skin('nana_character', 'list');
 $g5 = ['board_table' => 'g5_board', 'group_table' => 'g5_group', 'write_prefix' => 'g5_write_', 'menu_table' => 'g5_menu'];
 $member = ['mb_level' => 1];
-$meta = ['bo_read_level' => 1, 'bo_list_level' => 1, 'bo_use_cert' => '', 'gr_use_access' => 0];
+$meta = ['bo_read_level' => 1, 'bo_list_level' => 1, 'bo_use_cert' => '', 'gr_use_access' => 0, 'bo_write_level' => 2, 'bo_admin' => 'timeline-admin', 'gr_admin' => 'group-admin'];
 $queries = [];
 function sql_fetch($query, $error = true) {
     global $meta, $queries;
@@ -21,7 +21,7 @@ function sql_query($query, $error = true) {
             ['me_name' => '안전하지않은메뉴', 'me_link' => 'javascript:alert(1)', 'me_level' => 1],
         ];
     } else {
-        $rows = [['wr_id' => 3, 'wr_subject' => '공개 사건', 'wr_1' => '001', 'wr_2' => '시작']];
+        $rows = [['wr_id' => 3, 'wr_subject' => '공개 사건', 'wr_1' => '001', 'wr_2' => '시작', 'mb_id' => 'author']];
     }
     return (object) ['rows' => $rows, 'index' => 0];
 }
@@ -45,3 +45,22 @@ $items = nana_navigation(['character_board' => 'oc', 'timeline_board' => 'timeli
 $labels = array_column($items, 'label');
 expect_skin(in_array('공개메뉴', $labels, true) && !in_array('숨긴메뉴', $labels, true) && !in_array('안전하지않은메뉴', $labels, true), 'directory respects menu level and safe URLs');
 expect_skin(count(array_unique(array_column($items, 'url'))) === count($items), 'directory deduplicates current board');
+
+$member = ['mb_level' => 1, 'mb_id' => ''];
+$is_admin = '';
+expect_skin(nana_timeline_tools('timeline')['write_href'] === '', 'guest without write level sees no add action');
+expect_skin(nana_public_events('timeline')[0]['edit_href'] === '', 'guest sees no event edit action');
+$member = ['mb_level' => 2, 'mb_id' => 'author'];
+$tools = nana_timeline_tools('timeline');
+expect_skin(strpos($tools['write_href'], 'write.php?bo_table=timeline') !== false, 'writer gets native add action even for empty timeline');
+expect_skin(strpos(nana_public_events('timeline')[0]['edit_href'], 'w=u&bo_table=timeline&wr_id=3') !== false, 'author gets direct event edit action');
+$member = ['mb_level' => 2, 'mb_id' => 'unrelated'];
+$is_admin = 'board';
+expect_skin(nana_public_events('timeline')[0]['edit_href'] === '', 'being admin of another board does not grant timeline editing');
+$member['mb_id'] = 'timeline-admin';
+expect_skin(nana_public_events('timeline')[0]['edit_href'] !== '', 'timeline board admin gets edit action');
+$member['mb_id'] = 'group-admin';
+expect_skin(nana_public_events('timeline')[0]['edit_href'] !== '', 'timeline group admin gets edit action');
+$member['mb_id'] = 'super-admin';
+$is_admin = 'super';
+expect_skin(nana_public_events('timeline')[0]['edit_href'] !== '', 'super admin gets edit action');

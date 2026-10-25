@@ -143,20 +143,54 @@ if (!function_exists('nana_e')) {
             return true;
         }));
     }
+    function nana_public_board_meta($board) {
+        global $g5;
+        if (!preg_match('/^[a-zA-Z0-9_]{1,20}$/D', $board) || !function_exists('sql_fetch') || !isset($g5['board_table'], $g5['group_table'], $g5['write_prefix'])) { return null; }
+        $meta = sql_fetch("select b.bo_read_level, b.bo_list_level, b.bo_use_cert, b.bo_write_level, b.bo_admin, g.gr_use_access, g.gr_admin from {$g5['board_table']} b left join {$g5['group_table']} g on b.gr_id = g.gr_id where b.bo_table = '{$board}'", false);
+        if (!$meta || (int) $meta['bo_read_level'] > 1 || (int) $meta['bo_list_level'] > 1 || !empty($meta['bo_use_cert']) || !empty($meta['gr_use_access'])) { return null; }
+        return $meta;
+    }
+    function nana_board_manager($meta) {
+        global $is_admin, $member;
+        if (!$meta) { return false; }
+        if (isset($is_admin) && $is_admin === 'super') { return true; }
+        $id = isset($member['mb_id']) ? (string) $member['mb_id'] : '';
+        return $id !== '' && ($id === nana_field($meta, 'bo_admin') || $id === nana_field($meta, 'gr_admin'));
+    }
+    function nana_timeline_tools($board) {
+        $tools = ['list_href' => '', 'write_href' => ''];
+        if (!preg_match('/^[a-zA-Z0-9_]{1,20}$/D', $board)) { return $tools; }
+        $tools['list_href'] = nana_board_url($board);
+        $meta = nana_public_board_meta($board);
+        global $member;
+        $level = isset($member['mb_level']) ? (int) $member['mb_level'] : 1;
+        if ($meta && (nana_board_manager($meta) || (isset($meta['bo_write_level']) && $level >= (int) $meta['bo_write_level']))) {
+            $tools['write_href'] = rtrim(G5_BBS_URL, '/') . '/write.php?' . http_build_query(['bo_table' => $board], '', '&', PHP_QUERY_RFC3986);
+        }
+        return $tools;
+    }
+    function nana_event_edit_url($board, $row, $meta) {
+        global $member;
+        if (!$meta) { return ''; }
+        $id = isset($member['mb_id']) ? (string) $member['mb_id'] : '';
+        $author = $id !== '' && $id === nana_field($row, 'mb_id');
+        if (!nana_board_manager($meta) && !$author) { return ''; }
+        return rtrim(G5_BBS_URL, '/') . '/write.php?' . http_build_query(['w' => 'u', 'bo_table' => $board, 'wr_id' => (int) $row['wr_id']], '', '&', PHP_QUERY_RFC3986);
+    }
     function nana_public_events($board, $limit = 8) {
         global $g5;
-        if (!preg_match('/^[a-zA-Z0-9_]{1,20}$/D', $board) || !function_exists('sql_fetch') || !isset($g5['board_table'], $g5['group_table'], $g5['write_prefix'])) { return []; }
-        $meta = sql_fetch("select b.bo_read_level, b.bo_list_level, b.bo_use_cert, g.gr_use_access from {$g5['board_table']} b left join {$g5['group_table']} g on b.gr_id = g.gr_id where b.bo_table = '{$board}'", false);
-        if (!$meta || (int) $meta['bo_read_level'] > 1 || (int) $meta['bo_list_level'] > 1 || !empty($meta['bo_use_cert']) || !empty($meta['gr_use_access'])) { return []; }
+        $meta = nana_public_board_meta($board);
+        if (!$meta) { return []; }
         $limit = max(1, min(16, (int) $limit));
-        $result = sql_query("select wr_id, wr_subject, wr_1, wr_2 from {$g5['write_prefix']}{$board} where wr_is_comment = 0 and wr_reply = '' and wr_option not like '%secret%' order by wr_num, wr_id limit {$limit}", false);
+        $result = sql_query("select wr_id, wr_subject, wr_1, wr_2, mb_id from {$g5['write_prefix']}{$board} where wr_is_comment = 0 and wr_reply = '' and wr_option not like '%secret%' order by wr_num, wr_id limit {$limit}", false);
         $events = [];
         while ($result && ($row = sql_fetch_array($result))) {
             $row['href'] = nana_board_url($board, ['wr_id' => (int) $row['wr_id']]);
+            $row['edit_href'] = nana_event_edit_url($board, $row, $meta);
             $row['image'] = function_exists('get_file') ? nana_image(get_file($board, $row['wr_id'])) : '';
             $events[] = $row;
         }
         return $events;
     }
 }
-add_stylesheet('<link rel="stylesheet" href="'.nana_e($board_skin_url).'/style.css?v=2">', 20);
+add_stylesheet('<link rel="stylesheet" href="'.nana_e($board_skin_url).'/style.css?v=3">', 20);

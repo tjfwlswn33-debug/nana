@@ -22,7 +22,7 @@ const base = process.env.NANA_FIXTURE_URL || 'http://127.0.0.1:8081';
         const errors = [];
         page.on('pageerror', error => errors.push(error.message));
         page.on('response', response => { if (response.status() >= 400 && !response.url().endsWith('favicon.ico')) errors.push(`HTTP ${response.status()} ${response.url()}`); });
-        for (const [name, url] of [['overview', '/site/bbs/board.php?bo_table=oc'], ['profile', '/site/bbs/board.php?bo_table=oc&wr_id=1'], ['timeline', '/site/bbs/board.php?bo_table=timeline'], ['write', '/site/bbs/write.php?bo_table=oc']]) {
+        for (const [name, url] of [['overview', '/site/bbs/board.php?bo_table=oc'], ['profile', '/site/bbs/board.php?bo_table=oc&wr_id=1'], ['timeline', '/site/bbs/board.php?bo_table=oc&nana_section=timeline'], ['write', '/site/bbs/write.php?bo_table=oc'], ['write-event', '/site/bbs/write.php?bo_table=oc&nana_type=timeline']]) {
             for (const width of [1280, 768, 390, 320]) {
                 await page.setViewportSize({ width, height: 960 });
                 await page.goto(base + url);
@@ -40,11 +40,20 @@ const base = process.env.NANA_FIXTURE_URL || 'http://127.0.0.1:8081';
         if (await page.locator('.nana-era').count() !== 7) throw Error('Linked timeline preview did not render');
         if (!await page.locator('.nana-add-event').isVisible() || await page.locator('.nana-era-edit').count() !== 7) throw Error('Timeline add/edit actions missing for admin');
         await page.locator('.nana-era').first().click();
-        if (new URL(page.url()).searchParams.get('bo_table') !== 'timeline' || !new URL(page.url()).searchParams.has('wr_id')) throw Error('Timeline image did not open the selected event');
+        if (new URL(page.url()).searchParams.get('bo_table') !== 'oc' || !new URL(page.url()).searchParams.has('wr_id')) throw Error('Timeline image did not open the selected event');
         await page.goto(base + '/site/bbs/board.php?bo_table=oc');
         await page.locator('.nana-era-edit').first().click();
-        if (!new URL(page.url()).searchParams.has('w') || new URL(page.url()).searchParams.get('bo_table') !== 'timeline') throw Error('Timeline edit did not open native editor');
+        if (!new URL(page.url()).searchParams.has('w') || new URL(page.url()).searchParams.get('bo_table') !== 'oc') throw Error('Timeline edit did not open native editor');
         await page.locator('#bo_w').waitFor();
+        if (await page.locator('#nana_entry_type').inputValue() !== 'nana_timeline') throw Error('Event editing lost its type');
+        await page.goto(base + '/site/bbs/board.php?bo_table=oc');
+        await page.locator('.nana-add-event').click();
+        if (await page.locator('#nana_entry_type').inputValue() !== 'nana_timeline' || await page.locator('[data-nana-character-fields]').isVisible()) throw Error('Timeline registration type/fields wrong');
+        await page.locator('#nana_entry_type').selectOption('nana_character');
+        if (!await page.locator('[data-nana-character-fields]').isVisible()) throw Error('Switching to character did not reveal metadata');
+        await page.locator('#nana_entry_type').selectOption('nana_timeline');
+        const payload = await page.locator('#fwrite').evaluate(form => Object.fromEntries(new FormData(form)));
+        if (payload.bo_table !== 'oc' || payload.wr_9 !== 'nana_timeline') throw Error('Native save payload targets wrong board or kind');
         await page.goto(base + '/site/bbs/board.php?bo_table=oc');
         await page.locator('.nana-card').first().click();
         await page.locator('.nana-profile-heading').waitFor();
@@ -60,7 +69,7 @@ const base = process.env.NANA_FIXTURE_URL || 'http://127.0.0.1:8081';
         await frame.locator('.nana-introduction').waitFor();
         if (!page.url().endsWith('/site/index.php') || !await page.locator('#frame-menu').isVisible() || await page.locator('#frame-bgm').getAttribute('data-state') !== 'playing') throw Error('Navigation escaped the host iframe');
         if (errors.length) throw Error(errors.join('\n'));
-        console.log('PASS: four skin pages at 1280/768/390/320px, white panel, clickable timeline, native timeline add/edit, profile sections, return-to-list, host/sidebar/BGM-control visibility, iframe navigation, no browser errors');
+        console.log('PASS: unified character/timeline board, native type selection and payload, five skin pages at 1280/768/390/320px, white panel, clickable timeline, native timeline add/edit, profile sections, return-to-list, host/sidebar/BGM-control visibility, iframe navigation, no browser errors');
     } finally {
         await browser.close();
     }

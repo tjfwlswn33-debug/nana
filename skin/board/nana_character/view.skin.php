@@ -2,7 +2,7 @@
 if (!defined('_GNUBOARD_')) exit;
 require_once __DIR__ . '/skin.lib.php';
 $nana_settings = nana_load_settings(__DIR__);
-$nana_timeline = false;
+$nana_timeline = nana_entry_type($view) === 'timeline';
 $nana_return = nana_list_url($bo_table, get_defined_vars());
 $nana_photo = !$nana_timeline && !empty($view['file']) ? nana_image($view['file']) : '';
 $nana_content = nana_sections($view);
@@ -24,3 +24,5 @@ $nana_content = nana_sections($view);
 </div>
 
 </div>
+
+<?php include __DIR__ . '/shell.php'; ?>

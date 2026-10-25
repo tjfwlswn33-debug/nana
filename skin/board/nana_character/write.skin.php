@@ -4,6 +4,9 @@ if (!defined('_GNUBOARD_')) exit; // 개별 페이지 접근 불가
 // add_stylesheet('css 구문', 출력순서); 숫자가 작을 수록 먼저 출력됨
 require_once __DIR__ . '/skin.lib.php';
 $nana_settings = nana_load_settings(__DIR__);
+$nana_marker = nana_field($write, 'wr_9');
+if ($w !== 'u') { $nana_marker = isset($_GET['nana_type']) && $_GET['nana_type'] === 'timeline' ? 'nana_timeline' : 'nana_character'; }
+$nana_is_event = $nana_marker === 'nana_timeline';
 // Gnuboard5 basic write skin을 바탕으로 작성 (GPL-2.0-or-later).
 $editor_js = isset($editor_js) ? $editor_js : '';
 $captcha_js = isset($captcha_js) ? $captcha_js : '';
@@ -30,16 +33,20 @@ $is_use_captcha = isset($is_use_captcha) ? $is_use_captcha : !empty($is_guest);
     <input type="hidden" name="sod" value="<?php echo $sod ?>">
     <input type="hidden" name="page" value="<?php echo $page ?>">
 
+    <div class="nana-entry-choice"><label for="nana_entry_type">기록 종류</label><select name="wr_9" id="nana_entry_type">
+        <?php if (!in_array($nana_marker, ['nana_character', 'nana_timeline'], true)): ?><option value="<?= nana_e($nana_marker) ?>" selected>캐릭터 · 기존 기록</option><?php endif; ?>
+        <option value="nana_character" <?= $nana_marker === 'nana_character' ? 'selected' : '' ?>>캐릭터</option>
+        <option value="nana_timeline" <?= $nana_is_event ? 'selected' : '' ?>>타임라인</option>
+    </select></div>
     <div class="nana-fields">
-        <label for="wr_1">직업 · 소속</label>
+        <label for="wr_1" data-nana-character-label="직업 · 소속" data-nana-timeline-label="연도 · 시대"><?= $nana_is_event ? "연도 · 시대" : "직업 · 소속" ?></label>
         <input type="text" name="wr_1" id="wr_1" maxlength="255" value="<?php echo nana_e(isset($write['wr_1']) ? $write['wr_1'] : ''); ?>">
-        <label for="wr_2">한 줄 소개</label>
+        <label for="wr_2" data-nana-character-label="한 줄 소개" data-nana-timeline-label="사건 분류"><?= $nana_is_event ? "사건 분류" : "한 줄 소개" ?></label>
         <input type="text" name="wr_2" id="wr_2" maxlength="255" value="<?php echo nana_e(isset($write['wr_2']) ? $write['wr_2'] : ''); ?>">
     </div>
 
-    <?php foreach (['wr_9', 'wr_10'] as $nana_unused): ?><input type="hidden" name="<?php echo $nana_unused; ?>" value="<?php echo nana_e(nana_field($write, $nana_unused)); ?>"><?php endforeach; ?>
-
-    <details class="nana-extra-fields" open><summary>프로필 기본 정보 <span>선택 입력</span></summary><div class="nana-fields">
+    <div data-nana-event-fields <?= !$nana_is_event ? 'hidden' : '' ?>><label for="nana_order">타임라인 배치 순서</label><input type="text" inputmode="numeric" name="wr_10" id="nana_order" maxlength="20" value="<?= nana_e(nana_field($write, 'wr_10')) ?>"><p class="nana-help">작은 숫자부터 표시합니다. 예: 10, 20, 30</p></div>
+    <details class="nana-extra-fields" data-nana-character-fields <?= $nana_is_event ? "hidden" : "" ?> open><summary>프로필 기본 정보 <span>선택 입력</span></summary><div class="nana-fields">
     <?php foreach (['wr_8' => '영문명 · 다른 이름', 'wr_3' => '생일', 'wr_4' => '키', 'wr_5' => '종족', 'wr_6' => '상징 · 수호신', 'wr_7' => '키워드'] as $nana_key => $nana_label): ?>
         <div class="nana-input-pair"><label for="<?php echo $nana_key; ?>"><?php echo nana_e($nana_label); ?></label><input type="text" name="<?php echo $nana_key; ?>" id="<?php echo $nana_key; ?>" maxlength="255" value="<?php echo nana_e(nana_field($write, $nana_key)); ?>"></div>
     <?php endforeach; ?>
@@ -119,7 +126,7 @@ $is_use_captcha = isset($is_use_captcha) ? $is_use_captcha : !empty($is_guest);
         <label for="wr_subject" class="sound_only">제목<strong>필수</strong></label>
 
         <div id="autosave_wrapper" class="write_div">
-            <input type="text" name="wr_subject" value="<?php echo $subject ?>" id="wr_subject" required class="frm_input full_input required" size="50" maxlength="255" placeholder="캐릭터 이름">
+            <input type="text" name="wr_subject" value="<?php echo $subject ?>" id="wr_subject" required class="frm_input full_input required" size="50" maxlength="255" placeholder="이름 또는 사건 제목">
 
         </div>
 
@@ -269,3 +276,6 @@ $is_use_captcha = isset($is_use_captcha) ? $is_use_captcha : !empty($is_guest);
 <!-- } 게시물 작성/수정 끝 -->
 
 </div>
+
+<?php include __DIR__ . '/shell.php'; ?>
+<script src="<?= nana_e($board_skin_url) ?>/write-type.js?v=4" defer></script>

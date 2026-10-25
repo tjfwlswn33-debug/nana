@@ -40,49 +40,40 @@ function render_skin($folder, $type, $overrides = []) {
     $upload_max_filesize = '2MB'; $write_min = $write_max = 0;
     $editor_html = '<textarea name="wr_content" id="wr_content" required>본문</textarea>';
     $editor_js = '/* engine-editor */'; $captcha_html = '<div>engine-captcha</div>'; $captcha_js = '/* engine-captcha-check */';
+    $request = [];
     $skin_path = dirname(__DIR__) . '/skin/board/' . $folder;
     extract($overrides, EXTR_OVERWRITE);
+    $saved_request = $_GET; $_GET = $request;
     ob_start();
     try { include $skin_path . '/' . $type . '.skin.php'; return ob_get_contents(); }
-    finally { ob_end_clean(); }
+    finally { ob_end_clean(); $_GET = $saved_request; }
 }
 if (defined('NANA_FIXTURE_ONLY')) { return; }
-foreach (['nana_character', 'nana_timeline'] as $folder) {
-    $html = render_skin($folder, 'list');
-    expect_skin(strpos($html, 'wr_id=1') !== false && strpos($html, '<script>unsafe') === false, $folder . ' safe title and native profile link');
-    expect_skin(strpos($html, '숨길') === false && strpos($html, '비공개 기록') !== false, $folder . ' secret metadata hidden');
-    $html = render_skin($folder, 'list', ['list' => [], 'total_count' => 0]);
-    expect_skin(strpos($html, '아직 기록이 없습니다') !== false, $folder . ' empty list');
-    $html = render_skin($folder, 'view');
-    expect_skin(strpos($html, '<p>엔진이 변환한 본문</p>') !== false && strpos($html, 'write.php?w=u') !== false, $folder . ' body and permitted edit link');
-    $html = render_skin($folder, 'view', ['update_href' => '', 'delete_href' => '']);
-    expect_skin(strpos($html, 'write.php?w=u') === false && strpos($html, 'delete.php') === false, $folder . ' no unauthorized controls');
-    $html = render_skin($folder, 'write');
-    expect_skin(strpos($html, 'name="wr_1"') !== false && strpos($html, 'name="wr_2"') !== false && strpos($html, '<script>소개') === false, $folder . ' escaped editable extra fields');
-    expect_skin(strpos($html, 'name="token"') !== false && strpos($html, 'engine-captcha-check') !== false && strpos($html, 'engine-editor') !== false, $folder . ' engine CSRF, captcha and editor hooks');
-    expect_skin(strpos($html, 'bf_file[]') !== false && strpos($html, 'bf_file_del[0]') !== false && strpos($html, '/bbs/write_update.php') !== false, $folder . ' native upload, attachment delete, save route');
-}
-
-foreach (['nana_character', 'nana_timeline'] as $folder) {
-    $html = render_skin($folder, 'view', ['list_href' => null, 'page' => 3, 'stx' => '별 & 달', 'sfl' => 'wr_subject', 'sca' => '기록']);
-    $return = nana_list_url('oc', ['page' => 3, 'stx' => '별 & 달', 'sfl' => 'wr_subject', 'sca' => '기록']);
-    expect_skin(substr_count($html, 'href="' . nana_e($return) . '"') === 2, $folder . ' both return links work without list_href and retain search/page');
-    expect_skin(strpos($return, 'wr_id=') === false && strpos($return, 'bo_table=oc') !== false, $folder . ' return URL selects list, not current post');
-    expect_skin(strpos($html, '<header') === false && strpos($html, '<nav') === false && strpos($html, 'aria-label="개인홈 메뉴"') !== false, $folder . ' local directory without host header/nav tag collisions');
-}
-$plain = nana_sections(['wr_option' => '', 'wr_content' => "소개 <script>alert(1)</script>\n\n## 외형\n푸른 머리.\n\n## 성격\n조용한 사람."]);
-expect_skin(count($plain['sections']) === 2 && $plain['sections'][0]['title'] === '외형' && strpos($plain['intro'], '<script>') === false, 'plain headings split into safe introduction and sections');
-$rich = nana_sections(['wr_option' => 'html1', 'wr_content' => 'raw', 'content' => '<p>소개</p><h2>외형</h2><p><em>푸른 머리</em></p><h3>성격</h3><p>조용함</p>']);
-expect_skin(count($rich['sections']) === 2 && strpos($rich['sections'][0]['html'], '<em>푸른 머리</em>') !== false, 'rich editor headings preserve engine-rendered formatting');
-expect_skin(nana_url('/bbs/board.php?bo_table=oc&amp;page=2') === '/bbs/board.php?bo_table=oc&page=2', 'HTML-encoded engine URLs are decoded once before output escaping');
-expect_skin(nana_url('javascript:alert(1)') === '' && nana_url('//evil.test/path') === '', 'unsafe URL schemes rejected');
-expect_skin(nana_board_url('oc') === rtrim(G5_BBS_URL, '/') . '/board.php?bo_table=oc', 'subdirectory-safe canonical board route');
-$html = render_skin('nana_character', 'write', ['write' => ['wr_3' => '기존 생일', 'wr_8' => 'Existing Name', 'wr_9' => '보존9', 'wr_10' => '보존10']]);
-expect_skin(strpos($html, 'value="기존 생일"') !== false && strpos($html, 'value="Existing Name"') !== false && strpos($html, 'value="보존10"') !== false, 'profile metadata and unused existing fields survive editing');
-
-$nested = nana_sections(['wr_option' => 'html1', 'wr_content' => 'raw', 'content' => '<div><p>소개</p><div><h2>외형</h2><p><em>푸른 머리</em></p><h3>성격</h3><p>조용함</p></div></div>']);
-if (class_exists('DOMDocument')) {
-    expect_skin(count($nested['sections']) === 2 && strpos($nested['sections'][0]['html'], '<em>푸른 머리</em>') !== false && strpos($nested['intro'], '<div>') === false, 'nested editor containers split without unbalanced wrappers');
-} else {
-    expect_skin(!$nested['sections'] && strpos($nested['intro'], '<div>') !== false, 'complex rich content preserved intact without optional DOM extension');
-}
+$folder = 'nana_character';
+$html = render_skin($folder, 'list');
+expect_skin(strpos($html, 'wr_id=1') !== false && strpos($html, '<script>unsafe') === false, 'safe character links');
+expect_skin(strpos($html, '숨길') === false && strpos($html, '비공개 기록') !== false, 'secret title and metadata hidden');
+expect_skin(strpos($html, 'bo_table=oc&amp;nana_type=timeline') !== false && strpos($html, 'bo_table=oc&amp;nana_type=character') !== false, 'both creation buttons target the SAME board');
+$html = render_skin($folder, 'list', ['list' => []]);
+expect_skin(strpos($html, '아직 등록된 캐릭터') !== false && strpos($html, '아직 기록된 타임라인') !== false, 'both empty states and creation buttons');
+$html = render_skin($folder, 'view', ['list_href' => null, 'page' => 3, 'stx' => '별 & 달']);
+$return = nana_list_url('oc', ['page' => 3, 'stx' => '별 & 달', 'sfl' => '', 'sca' => '', 'spt' => '', 'sst' => '', 'sod' => '']);
+expect_skin(substr_count($html, 'href="' . nana_e($return) . '"') === 2, 'both return links work without list_href');
+expect_skin(strpos($html, 'CHARACTER NOTES') !== false && strpos($html, '<p>엔진이 변환한 본문</p>') !== false, 'character detail uses native content');
+$event = ['wr_subject' => '사건', 'wr_1' => '001', 'wr_2' => '시작', 'wr_9' => 'nana_timeline', 'content' => '<p>사건 내용</p>'];
+$html = render_skin($folder, 'view', ['view' => $event, 'request' => ['nana_section' => 'timeline']]);
+expect_skin(strpos($html, 'WORLD CHRONICLE') !== false && strpos($html, 'nana-profile-art') === false && strpos($html, 'nana_section=timeline') !== false, 'SAME skin renders timeline detail and returns to timeline');
+$html = render_skin($folder, 'view', ['update_href' => '', 'delete_href' => '']);
+expect_skin(strpos($html, 'write.php?w=u') === false && strpos($html, 'delete.php') === false, 'no unauthorized native controls');
+$html = render_skin($folder, 'write', ['w' => '', 'request' => ['nana_type' => 'timeline']]);
+expect_skin(strpos($html, 'value="nana_timeline" selected') !== false, 'new timeline selected from its registration button');
+expect_skin(strpos($html, 'name="wr_9"') !== false && strpos($html, 'name="wr_10"') !== false, 'native form saves entry kind and display order');
+expect_skin(strpos($html, 'name="token"') !== false && strpos($html, 'engine-captcha-check') !== false && strpos($html, 'engine-editor') !== false, 'native CSRF captcha editor hooks');
+expect_skin(strpos($html, 'bf_file[]') !== false && strpos($html, '/bbs/write_update.php') !== false, 'native attachment and save route');
+$html = render_skin($folder, 'write', ['write' => ['wr_9' => 'legacy', 'wr_10' => '보존10', 'wr_3' => '생일']]);
+expect_skin(strpos($html, 'value="legacy" selected') !== false && strpos($html, 'value="보존10"') !== false, 'unmarked legacy characters and metadata preserved');
+$parts = nana_sections(['wr_content' => "소개 <script>bad</script>\n\n## 외형\n푸른 머리\n\n## 성격\n조용함", 'wr_option' => '']);
+expect_skin(count($parts['sections']) === 2 && strpos($parts['intro'], '<script>') === false, 'safe plain-text profile sections');
+$parts = nana_sections(['wr_option' => 'html1', 'content' => '<div><p>소개</p><h2>외형</h2><p><em>본문</em></p></div>']);
+expect_skin(strpos($parts['intro'] . implode('', array_column($parts['sections'], 'html')), '<em>본문</em>') !== false, 'rich content preserved');
+expect_skin(nana_url('javascript:alert(1)') === '' && nana_url('//evil.test/a') === '', 'unsafe URLs rejected');

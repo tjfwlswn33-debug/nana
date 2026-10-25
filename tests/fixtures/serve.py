@@ -27,9 +27,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if url.path == '/site/main.php':
             self.path = '/list.html'
         elif url.path == '/site/bbs/board.php':
-            self.path = '/profile.html' if 'wr_id' in query else ('/timeline.html' if query.get('bo_table') == ['timeline'] else '/list.html')
+            self.path = (('/event-timeline.html' if query.get('nana_section') == ['timeline'] else '/event.html') if int(query['wr_id'][0]) >= 11 else '/profile.html') if 'wr_id' in query else ('/timeline.html' if query.get('nana_section') == ['timeline'] else '/list.html')
         elif url.path == '/site/bbs/write.php':
-            self.path = '/write.html'
+            self.path = '/edit-event.html' if query.get('w') == ['u'] and int(query.get('wr_id', ['0'])[0]) >= 11 else ('/write-event.html' if query.get('nana_type') == ['timeline'] else '/write.html')
         super().do_GET()
 
     def log_message(self, *_):
